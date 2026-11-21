@@ -18,14 +18,19 @@
         entry.target.classList.add('is-visible');
         observer.unobserve(entry.target);
       });
-    }, { threshold: 0.08, rootMargin: '0px 0px -35px 0px' });
-    document.querySelectorAll('.section > .eyebrow, .section-heading, .about-layout > *, .skill-grid article, .project-visual, .project-copy > *, .contact h2, .contact > .button, .work > h2').forEach(element => {
+    }, { threshold: 0.06, rootMargin: '0px 0px -25px 0px' });
+    document.querySelectorAll('.company-logo, .experience-title, .experience-summary, .career-journey > div, .process-grid article, .tech-icons a, .tech-details details, .section > .eyebrow, .section-heading h2, .section-heading > p, .about-layout h2, .about-layout > div > *, .skill-grid article, .project-visual, .project-copy > *, .contact h2, .contact > .button, .work > h2').forEach(element => {
       element.classList.add('reveal');
       if (element.matches('.about-layout > :first-child')) element.classList.add('reveal-left');
       if (element.matches('.about-layout > :last-child')) element.classList.add('reveal-right');
       if (element.matches('.project-visual')) element.classList.add('reveal-scale');
+      if (element.matches('.tech-icons a, .company-logo')) element.classList.add('reveal-pop');
+      if (element.matches('h2, .experience-title')) element.classList.add('reveal-heading');
+      if (element.matches('.skill-grid article, .process-grid article, .tech-details details')) element.classList.add('reveal-card');
+      if (element.matches('.career-journey > div, .process-grid article')) element.classList.add('reveal-left');
       const siblings = [...element.parentElement.children];
-      const delay = element.matches('.skill-grid article, .project-copy > *') ? Math.min(siblings.indexOf(element), 3) * 110 : 0;
+      const stagger = element.matches('.tech-icons a') ? 55 : 95;
+      const delay = element.matches('.skill-grid article, .project-copy > *, .about-layout > div > *, .tech-icons a, .tech-details details, .process-grid article, .career-journey > div') ? Math.min(siblings.indexOf(element), 5) * stagger : 0;
       element.style.setProperty('--reveal-delay', `${delay}ms`);
       observer.observe(element);
     });
@@ -46,6 +51,8 @@
   const links = [...document.querySelectorAll('nav a')];
   const sections = links.map(link => document.querySelector(link.getAttribute('href')));
   const artwork = document.querySelector('.portrait-art');
+  const story = document.querySelector('.motion-story');
+  const storyLines = story ? [...story.querySelectorAll('.motion-title span')] : [];
   let parallaxTarget = 0;
   let parallaxCurrent = 0;
   let parallaxFrame = null;
@@ -57,6 +64,16 @@
   }
   let scheduled = false;
   function updateScroll() {
+    // Measure before writes; native scrolling stays in control.
+    const storyRect = story?.getBoundingClientRect();
+    if (storyRect && storyRect.bottom > 0 && storyRect.top < window.innerHeight) {
+      const clamp = value => Math.min(1, Math.max(0, value));
+      const topOffset = window.innerWidth <= 700 ? 84 : 108;
+      const progress = clamp((topOffset - storyRect.top) / Math.max(1, storyRect.height - window.innerHeight + topOffset));
+      story.style.setProperty('--travel', paused ? '0' : String(progress * 2 - 1));
+      story.style.setProperty('--card-opacity', String(0.4 + Math.sin(progress * Math.PI) * 0.45));
+      storyLines.forEach((line, index) => line.style.setProperty('--fill', `${paused ? 100 : clamp(progress * 3.3 - index * 0.82) * 100}%`));
+    }
     const max = document.documentElement.scrollHeight - window.innerHeight;
     document.querySelector('.scroll-progress').style.transform = `scaleX(${max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0})`;
     document.querySelector('header').classList.toggle('scrolled', window.scrollY > 20);
